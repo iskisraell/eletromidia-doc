@@ -242,8 +242,12 @@ class EletromidiaPDF:
             p.set_font("Montserrat", "", 9)
             p.cell(0, 7, m["value"], new_x="LMARGIN", new_y="NEXT")
 
-        # Sections — no forced page break; smart break inside _section_title
-        for section in content.get("sections", []):
+        # First section always starts on a fresh page after the cover
+        sections = content.get("sections", [])
+        if sections:
+            p.add_page()
+            self._render_section(sections[0])
+        for section in sections[1:]:
             self._render_section(section)
 
         return p
