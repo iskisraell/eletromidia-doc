@@ -117,15 +117,25 @@ class EletromidiaPDF:
             col_widths = [total // len(headers)] * len(headers)
             col_widths[-1] = total - sum(col_widths[:-1])
 
+        HEADER_H = 8
+        MAX_Y = 265  # page bottom margin
+
+        # Disable auto page break — we handle all breaks manually so
+        # fpdf never interrupts mid-row or mid-header with set_xy() active.
+        p.set_auto_page_break(auto=False)
+
         def _draw_header():
             p.set_font("Montserrat", "B", 8)
             p.set_fill_color(*ORANGE)
             p.set_text_color(*WHITE)
+            # Ensure enough space for header + at least one small row
+            if p.get_y() + HEADER_H + 9 > MAX_Y:
+                p.add_page()
             y0 = p.get_y()
             for i, h in enumerate(headers):
                 p.set_xy(10 + sum(col_widths[:i]), y0)
-                p.cell(col_widths[i], 8, h, border=0, fill=True, align="C")
-            p.ln(8)
+                p.cell(col_widths[i], HEADER_H, h, border=0, fill=True, align="C")
+            p.set_y(y0 + HEADER_H)
 
         _draw_header()
         p.set_font("Montserrat", "", 8)
@@ -143,7 +153,8 @@ class EletromidiaPDF:
                 max_lines = max(max_lines, len(lines))
             row_h = max(7, max_lines * 5 + 2)
 
-            if p.get_y() + row_h > 265:
+            # Manual page break: if row doesn't fit, new page + re-draw header
+            if p.get_y() + row_h > MAX_Y:
                 p.add_page()
                 _draw_header()
                 p.set_font("Montserrat", "", 8)
@@ -167,6 +178,9 @@ class EletromidiaPDF:
         p.set_line_width(0.5)
         p.line(10, p.get_y(), 10 + sum(col_widths), p.get_y())
         p.ln(4)
+
+        # Re-enable auto page break for normal content after the table
+        p.set_auto_page_break(auto=True, margin=25)
 
     # --- Recursive section renderer ----------------------------------------
 
